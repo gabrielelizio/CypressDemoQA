@@ -1,0 +1,45 @@
+{
+  "name": "cypressdemoqa",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test:api": "cypress run --env TAGS=@api",
+    "test:ui": "cypress run --env TAGS=@ui",
+    "test:practice-form": "cypress run --env TAGS=@practice-form",
+    "test:browser-windows": "cypress run --env TAGS=@browser-windows",
+    "test:web-tables": "cypress run --env TAGS=@web-tables",
+    "test:progress-bar": "cypress run --env TAGS=@progress-bar",
+    "test:sortable": "cypress run --env TAGS=@sortable",
+    "test:all": "cypress run",
+    "cypress:open": "cypress open",
+    "report": "node generate-report.js"
+  },
+  "cypress-cucumber-preprocessor": {
+    "stepDefinitions": "cypress/support/step_definitions/**/*.{js,mjs,ts,tsx}",
+    "nonGlobalStepDefinitions": false,
+    "cucumberJson": {
+      "generate": true,
+      "outputFolder": "cypress/reports/cucumber-json",
+      "filePrefix": "",
+      "fileSuffix": ".cucumber"
+    }
+  },
+  "keywords": [
+    "cypress",
+    "testing",
+    "automation",
+    "qa",
+    "demoqa"
+  ],
+  "author": "QA Automation Engineer",
+  "license": "ISC",
+  "description": "QA Automation Challenge for DemoQA using Cypress with Cucumber and BDD",
+  "devDependencies": {
+    "@badeball/cypress-cucumber-preprocessor": "^23.0.0",
+    "@bahmutov/cypress-esbuild-preprocessor": "^2.2.5",
+    "cypress": "^15.1.0",
+    "cypress-file-upload": "^5.0.8",
+    "esbuild": "^0.25.9",
+    "multiple-cucumber-html-reporter": "^3.9.3"
+  }
+}

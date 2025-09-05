@@ -1,0 +1,19 @@
+{
+  "testUser": {
+    "userName": "testuser123",
+    "password": "P@ssw0rd123"
+  },
+  "practiceForm": {
+    "firstName": "Test",
+    "lastName": "User",
+    "email": "test@example.com",
+    "gender": "Male",
+    "mobile": "1234567890",
+    "dateOfBirth": "15 May 1990",
+    "subjects": "Maths",
+    "hobbies": "Sports",
+    "address": "123 Test Street, Test City",
+    "state": "NCR",
+    "city": "Delhi"
+  }
+}
