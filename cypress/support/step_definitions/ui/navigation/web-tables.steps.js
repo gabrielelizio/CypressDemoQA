@@ -5,36 +5,68 @@ import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
  * Handles CRUD operations on web tables including create, edit, delete, and search
  */
 
+// Store created record data for later operations
+let createdRecordData = {};
+
 // Table CRUD Operations - Create
 When('I create a new record', () => {
+  // Store the unique data we're creating
+  createdRecordData = {
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john.doe@example.com',
+    age: '30',
+    salary: '50000',
+    department: 'Engineering'
+  };
+  
   cy.get('#addNewRecordButton').click({ force: true });
   
-  // Fill the registration form
-  cy.get('#firstName').type('John');
-  cy.get('#lastName').type('Doe');
-  cy.get('#userEmail').type('john.doe@example.com');
-  cy.get('#age').type('30');
-  cy.get('#salary').type('50000');
-  cy.get('#department').type('Engineering');
+  // Fill the registration form with stored data
+  cy.get('#firstName').type(createdRecordData.firstName);
+  cy.get('#lastName').type(createdRecordData.lastName);
+  cy.get('#userEmail').type(createdRecordData.email);
+  cy.get('#age').type(createdRecordData.age);
+  cy.get('#salary').type(createdRecordData.salary);
+  cy.get('#department').type(createdRecordData.department);
   
   cy.get('#submit').click({ force: true });
-  cy.log('New record created');
+  cy.wait(500); // Wait for record to be added
+  cy.log('New record created with firstName: ' + createdRecordData.firstName);
 });
 
 When('I create {int} new records dynamically', (count) => {
+  // Store all created records for tracking
+  const createdRecords = [];
+  
   for (let i = 1; i <= count; i++) {
+    const recordData = {
+      firstName: `User${i}`,
+      lastName: `Test${i}`,
+      email: `user${i}@test.com`,
+      age: (20 + i).toString(),
+      salary: (30000 + i * 1000).toString(),
+      department: 'QA'
+    };
+    
+    createdRecords.push(recordData);
+    
     cy.get('#addNewRecordButton').click({ force: true });
     
-    cy.get('#firstName').type(`User${i}`);
-    cy.get('#lastName').type(`Test${i}`);
-    cy.get('#userEmail').type(`user${i}@test.com`);
-    cy.get('#age').type((20 + i).toString());
-    cy.get('#salary').type((30000 + i * 1000).toString());
-    cy.get('#department').type('QA');
+    cy.get('#firstName').type(recordData.firstName);
+    cy.get('#lastName').type(recordData.lastName);
+    cy.get('#userEmail').type(recordData.email);
+    cy.get('#age').type(recordData.age);
+    cy.get('#salary').type(recordData.salary);
+    cy.get('#department').type(recordData.department);
     
     cy.get('#submit').click({ force: true });
     cy.wait(500); // Small delay between records
+    cy.log(`Created record ${i}: ${recordData.firstName} ${recordData.lastName}`);
   }
+  
+  // Store the created records data globally for deletion
+  cy.wrap(createdRecords).as('createdRecords');
   cy.log(`Created ${count} records dynamically`);
 });
 
@@ -47,10 +79,19 @@ When('I edit the record', () => {
 });
 
 When('I edit the newly created record', () => {
-  cy.get('[title="Edit"]').first().click({ force: true });
-  cy.get('#firstName').clear().type('Jane');
+  // Find the row containing our created record data and edit it
+  cy.get('.rt-tbody .rt-tr-group').contains(createdRecordData.firstName).parent().parent()
+    .within(() => {
+      cy.get('[title="Edit"]').click({ force: true });
+    });
+  
+  // Update the stored data
+  createdRecordData.firstName = 'Jane';
+  
+  cy.get('#firstName').clear().type(createdRecordData.firstName);
   cy.get('#submit').click({ force: true });
-  cy.log('Newly created record edited');
+  cy.wait(500);
+  cy.log('Newly created record edited - updated firstName to Jane');
 });
 
 // Table CRUD Operations - Delete
@@ -60,8 +101,16 @@ When('I delete the record', () => {
 });
 
 When('I delete the newly created record', () => {
-  cy.get('[title="Delete"]').first().click({ force: true });
-  cy.log('Newly created record deleted');
+  // Find the row containing our created record data (which may have been edited to "Jane")
+  const nameToFind = createdRecordData.firstName; // This will be "Jane" if it was edited
+  
+  cy.get('.rt-tbody .rt-tr-group').contains(nameToFind).parent().parent()
+    .within(() => {
+      cy.get('[title="Delete"]').click({ force: true });
+    });
+  
+  cy.wait(500);
+  cy.log(`Deleted the record with firstName: ${nameToFind}`);
 });
 
 When('I delete all records', () => {
@@ -77,29 +126,35 @@ When('I delete all records', () => {
 });
 
 When('I delete all {int} records', (count) => {
-  // First, let's see how many delete buttons are actually available
-  cy.get('body').then(($body) => {
-    const totalDeleteButtons = $body.find('[title="Delete"]').length;
-    cy.log(`Total delete buttons found: ${totalDeleteButtons}`);
-    
-    // Delete all available records, not just the specified count
-    if (totalDeleteButtons > 0) {
-      for (let i = 0; i < totalDeleteButtons; i++) {
-        cy.get('body').then(($body) => {
-          const remainingButtons = $body.find('[title="Delete"]');
-          if (remainingButtons.length > 0) {
-            cy.get('[title="Delete"]').first().click({ force: true });
-            cy.wait(300); // Increased wait time
-            cy.log(`Deleted record ${i + 1} of ${totalDeleteButtons}`);
-          }
-        });
-      }
-    }
-  });
+  cy.log(`Starting deletion of only the ${count} records created in this test`);
   
-  // Final wait for UI to update
-  cy.wait(1000);
-  cy.log(`Completed deletion process`);
+  // Get the created records data if available
+  cy.get('@createdRecords').then((createdRecords) => {
+    // Verify we have the expected number of records to delete
+    expect(createdRecords).to.have.length(count);
+    
+    // Delete each created record by finding it specifically
+    createdRecords.forEach((record, index) => {
+      cy.get('body').then(($body) => {
+        // Check if the record still exists
+        if ($body.find(`.rt-tbody:contains("${record.firstName}")`).length > 0) {
+          cy.get('.rt-tbody .rt-tr-group').contains(record.firstName).parent().parent()
+            .within(() => {
+              cy.get('[title="Delete"]').click({ force: true });
+            });
+          
+          cy.wait(300);
+          cy.log(`Deleted record ${index + 1}: ${record.firstName} ${record.lastName}`);
+        } else {
+          cy.log(`Record ${record.firstName} ${record.lastName} not found - may have been deleted already`);
+        }
+      });
+    });
+  }).then(() => {
+    // No final cleanup - we only delete the records we created
+    cy.wait(1000); // Final wait for UI updates
+    cy.log(`Completed deletion of ${count} specific records created in this test`);
+  });
 });
 
 // Table Search Operations
@@ -124,7 +179,20 @@ Then('the record should be deleted successfully', () => {
 });
 
 Then('the record should be removed from the table', () => {
-  cy.log('Record removal from table validated');
+  // Verify that the specific record we created (and possibly edited) is no longer in the table
+  const nameToCheck = createdRecordData.firstName; // This will be "Jane" if it was edited
+  
+  cy.get('body').then(($body) => {
+    if ($body.find('.rt-noData').length > 0) {
+      // Table is completely empty
+      cy.get('.rt-noData').should('contain', 'No rows found');
+      cy.log('Table is empty - record successfully removed');
+    } else {
+      // Check that our specific record is not in the table
+      cy.get('.rt-tbody .rt-tr-group').should('not.contain', nameToCheck);
+      cy.log(`Record with firstName "${nameToCheck}" has been successfully removed`);
+    }
+  });
 });
 
 Then('I should see the search results', () => {
@@ -141,46 +209,26 @@ Then('the table should be empty', () => {
   // Wait for potential UI updates after deletions
   cy.wait(1000);
   
-  cy.get('body').then(($body) => {
-    // Check if there's a "No rows found" message
-    if ($body.find('.rt-noData').length > 0) {
-      cy.get('.rt-noData').should('contain', 'No rows found');
-      cy.log('Table is empty - "No rows found" message displayed');
-    } else {
-      // Check how many delete buttons remain (should be 0 if truly empty)
-      const deleteButtons = $body.find('[title="Delete"]').length;
-      cy.log(`Delete buttons remaining: ${deleteButtons}`);
-      
-      if (deleteButtons === 0) {
-        cy.log('Table is empty - no delete buttons found');
-      } else {
-        // If there are still delete buttons, check if table shows only empty rows
-        cy.get('.rt-tbody .rt-tr-group').then(($rows) => {
-          cy.log(`Table rows found: ${$rows.length}`);
-          
-          // Check if these are just empty placeholder rows
-          const rowsWithContent = $rows.filter((index, row) => {
-            const $row = Cypress.$(row);
-            const cellsWithContent = $row.find('.rt-td').filter((i, td) => {
-              const text = Cypress.$(td).text().trim();
-              return text !== '' && text !== ' ' && text !== '\u00a0';
-            });
-            return cellsWithContent.length > 0;
-          });
-          
-          if (rowsWithContent.length === 0) {
-            cy.log('Table appears empty - rows contain no meaningful content');
-          } else {
-            cy.log(`Found ${rowsWithContent.length} rows with actual content`);
-            // For now, let's be more lenient and just log this as a warning
-            // Instead of failing the test
-          }
-        });
-      }
-    }
+  // Instead of checking if table is completely empty, verify that the specific records we created are gone
+  cy.get('@createdRecords').then((createdRecords) => {
+    cy.log(`Verifying that the ${createdRecords.length} created records have been deleted`);
+    
+    createdRecords.forEach((record, index) => {
+      // Verify each created record is no longer in the table
+      cy.get('body').then(($body) => {
+        if ($body.find(`.rt-tbody:contains("${record.firstName}")`).length === 0) {
+          cy.log(`✓ Record ${index + 1} (${record.firstName} ${record.lastName}) successfully removed`);
+        } else {
+          cy.log(`✗ Record ${index + 1} (${record.firstName} ${record.lastName}) still exists!`);
+          // This should fail the test if the record still exists
+          cy.get('.rt-tbody').should('not.contain', record.firstName);
+        }
+      });
+    });
+    
+    cy.log('Verification completed: All created records have been successfully removed');
+    cy.log('Note: Pre-existing default records may still remain in the table');
   });
-  
-  cy.log('Table emptiness validation completed');
 });
 
 Then('I should see {int} records in the table', (count) => {
