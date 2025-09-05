@@ -1,8 +1,7 @@
 {
   "json": {
     "enabled": true,
-    "output": "cypress/reports/cucumber-json/cucumber-report.json",
-    "formatter": "cucumber-json-formatter"
+    "output": "cypress/reports/cucumber-json/results.json"
   },
   "messages": {
     "enabled": false

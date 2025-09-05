@@ -14,16 +14,6 @@
     "cypress:open": "cypress open",
     "report": "node generate-report.js"
   },
-  "cypress-cucumber-preprocessor": {
-    "stepDefinitions": "cypress/support/step_definitions/**/*.{js,mjs,ts,tsx}",
-    "nonGlobalStepDefinitions": false,
-    "cucumberJson": {
-      "generate": true,
-      "outputFolder": "cypress/reports/cucumber-json",
-      "filePrefix": "",
-      "fileSuffix": ".cucumber"
-    }
-  },
   "keywords": [
     "cypress",
     "testing",
